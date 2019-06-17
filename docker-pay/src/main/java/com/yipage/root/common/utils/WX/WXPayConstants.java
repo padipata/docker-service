@@ -1,4 +1,4 @@
-package com.yipage.root.common.utils;
+package com.yipage.root.common.utils.WX;
 
 import org.apache.http.client.HttpClient;
 

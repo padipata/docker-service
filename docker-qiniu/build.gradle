@@ -36,7 +36,6 @@ task wrapper(type: Wrapper) {
     gradleVersion = '4.9'
 }
 
-// 声明语言类型
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }

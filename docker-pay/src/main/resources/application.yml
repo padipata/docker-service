@@ -2,7 +2,10 @@ server:
   port: 8080
 
 wx:
-  appId: ${WXAPPID}
-  secret: ${WXSECRET}
-  mchId: ${WXMCHID}
-  paySignKey: ${WXPAYSIGNKEY}
+  appId: ${WXAPPID:xxx}
+  secret: ${WXSECRET:xxx}
+  mchId: ${WXMCHID:xxx}
+  paySignKey: ${WXPAYSIGNKEY:xxx}
+  uniformorder: https://api.mch.weixin.qq.com/pay/unifiedorder
+  notifyUrl: https://www.fly2you.cn/admin/url/api/notify
+  tradeType: JSAPI

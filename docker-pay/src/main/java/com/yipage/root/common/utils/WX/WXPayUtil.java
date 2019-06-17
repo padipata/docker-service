@@ -1,13 +1,26 @@
-package com.yipage.root.common.utils;
+package com.yipage.root.common.utils.WX;
 
-import com.yipage.root.common.utils.WXPayConstants.SignType;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.HttpServletRequest;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -22,6 +35,9 @@ import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.*;
+import org.dom4j.Document;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
 
 
 public class WXPayUtil {
@@ -344,6 +360,108 @@ public class WXPayUtil {
             return null;
         }
         return sb.toString().toUpperCase();
+    }
+
+    /**
+     * 请求，只请求一次，不做重试
+     *
+     * @param url
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    public static String requestOnce(final String url, String data) throws Exception {
+        BasicHttpClientConnectionManager connManager;
+        connManager = new BasicHttpClientConnectionManager(
+                RegistryBuilder.<ConnectionSocketFactory>create()
+                        .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                        .register("https", SSLConnectionSocketFactory.getSocketFactory())
+                        .build(),
+                null,
+                null,
+                null
+        );
+
+        HttpClient httpClient = HttpClientBuilder.create()
+                .setConnectionManager(connManager)
+                .build();
+
+        HttpPost httpPost = new HttpPost(url);
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setSocketTimeout(5000)
+                .setConnectTimeout(5000)
+                .setConnectionRequestTimeout(10000).build();
+
+        httpPost.setConfig(requestConfig);
+
+        StringEntity postEntity = new StringEntity(data, "UTF-8");
+        httpPost.addHeader("Content-Type", "text/xml");
+        httpPost.addHeader("User-Agent", "wxpay sdk java v1.0 " + "mchId");
+        httpPost.setEntity(postEntity);
+
+        HttpResponse httpResponse = httpClient.execute(httpPost);
+        HttpEntity httpEntity = httpResponse.getEntity();
+        String reusltObj = EntityUtils.toString(httpEntity, "UTF-8");
+        return reusltObj;
+    }
+
+    /**
+     * 将xml格式的字符串转换成Map对象
+     *
+     * @param xmlStr xml格式的字符串
+     * @return Map对象
+     * @throws Exception 异常
+     */
+    public static Map<String, Object> xmlStrToMap(String xmlStr) throws Exception {
+        Map<String, Object> map = new HashMap<String, Object>();
+        // 将xml格式的字符串转换成Document对象
+        Document doc = DocumentHelper.parseText(xmlStr);
+        // 获取根节点
+        Element root = doc.getRootElement();
+        // 获取根节点下的所有元素
+        List children = root.elements();
+        // 循环所有子元素
+        if (children != null && children.size() > 0) {
+            for (int i = 0; i < children.size(); i++) {
+                Element child = (Element) children.get(i);
+                map.put(child.getName(), child.getTextTrim());
+            }
+        }
+        return map;
+    }
+
+    public static String convertMap2Xml(Map<Object, Object> paraMap) {
+        StringBuffer xmlStr = new StringBuffer();
+        if (paraMap != null) {
+            xmlStr.append("<xml>");
+            Set<Object> keySet = paraMap.keySet();
+            Iterator<Object> keyIte = keySet.iterator();
+            while (keyIte.hasNext()) {
+                String key = (String) keyIte.next();
+                String val = String.valueOf(paraMap.get(key));
+                xmlStr.append("<");
+                xmlStr.append(key);
+                xmlStr.append(">");
+                xmlStr.append(val);
+                xmlStr.append("</");
+                xmlStr.append(key);
+                xmlStr.append(">");
+            }
+            xmlStr.append("</xml>");
+        }
+        return xmlStr.toString();
+    }
+
+    public static String getString(String key, Map<String, Object> map) {
+        if (map == null || key == null)
+            throw new IllegalArgumentException();
+        if (!map.containsKey(key))
+            return null;
+        Object value = map.get(key);
+        if (value == null)
+            return null;
+        return value.toString();
     }
 
 }

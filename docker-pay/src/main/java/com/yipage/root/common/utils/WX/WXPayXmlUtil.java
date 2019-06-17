@@ -1,4 +1,4 @@
-package com.yipage.root.common.utils;
+package com.yipage.root.common.utils.WX;
 
 import org.w3c.dom.Document;
 import javax.xml.XMLConstants;
